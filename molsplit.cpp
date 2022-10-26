@@ -124,7 +124,7 @@ int main (int argc, char* argv[])
           }
   }
 
-  cout << "File : " <<molecule_file <<" Window :"<<window<<" Threads:"<<threads<<endl;
+  cout << "File : " << molecule_file << " Window :"<< window << " Threads:" << threads << endl;
 
 
   if (threads>1){
@@ -141,14 +141,14 @@ int main (int argc, char* argv[])
         '\n');
 
     lines_per_thread = floor(line_count/threads);
-    cout << "Lines: " << line_count << "lines_per_thread: "<<lines_per_thread<<endl;
-    vector<string> tmpfiles = split_molecule_file(molecule_file,lines_per_thread,threads);
+    cout << "Lines: " << line_count << " lines_per_thread: " << lines_per_thread << endl;
+    vector<string> tmpfiles = split_molecule_file(molecule_file, lines_per_thread, threads);
 
     thread t[tmpfiles.size()];
 
-    for(int i = 0; i<tmpfiles.size();i++){
+    for(int i = 0; i<tmpfiles.size(); i++){
 
-      t[i] = thread( split_by_outliers, tmpfiles[i], window , n_sample);
+      t[i] = thread(split_by_outliers, tmpfiles[i], window, n_sample);
 
     }
 
@@ -165,7 +165,7 @@ int main (int argc, char* argv[])
     vector<string> tmpStructfiles;
     string base_tmp_file, struct_file;
 
-    for(int i = 0; i<tmpfiles.size();i++){
+    for(int i = 0; i<tmpfiles.size(); i++){
 
       base_tmp_file = string(fs::path(tmpfiles[i]).stem());
       struct_file = base_tmp_file + "_splits.tsv";
