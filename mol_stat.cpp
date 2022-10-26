@@ -292,7 +292,7 @@ void molecule_stat2(string &input_file_name, string &output_file_name, std::vect
       molecule_read_density[chrid][windowid] += reads * size;
     }
     ++starting_molecules[chrid][window_start];
-    ++ending_molecules[chrid][window_start];
+    ++ending_molecules[chrid][window_end];
 
     beg += min_extremity_length;
     end -= min_extremity_length;
@@ -320,7 +320,7 @@ void molecule_stat2(string &input_file_name, string &output_file_name, std::vect
       molecule_length[chrid][windowid]       /= molecule_coverage[chrid][windowid];
       molecule_read_density[chrid][windowid] /= molecule_coverage[chrid][windowid];
 
-      output_file << molecule_coverage[chrid][windowid] << tab << middle_mol_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << 
+      output_file << molecule_coverage[chrid][windowid] << tab << middle_mol_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << starting_molecules[chrid][windowid] << tab << ending_molecules[chrid][windowid] << "\n";
     }
   }
 
