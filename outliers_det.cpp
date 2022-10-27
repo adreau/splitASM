@@ -339,6 +339,7 @@ void detect_outliers2(
     std::vector < std::string >              &ctg_names,
     std::vector < long int >                 &ctg_sizes,
     int                                       window,
+    int                                       min_ctg_size,
     long                                      n_samples,
     std::string                              &output_file_name) {
 
@@ -375,10 +376,14 @@ void detect_outliers2(
             score_n_starts[chrid][pos],
             score_n_ends[chrid][pos])) {
         if (! incut) {
-          // Do not print if we start with a cut
-          // Output in BED format
-          if (pos > 0) {
-            output_file << ctg << '\t' << bin_frag_start * window << '\t' << pos * window << '\n';
+          // Check contig size
+          int size = (pos - bin_frag_start) * window;
+          if (size >= min_ctg_size) {
+            // Do not print if we start with a cut
+            // Output in BED format
+            if (pos > 0) {
+              output_file << ctg << '\t' << bin_frag_start * window << '\t' << pos * window << '\n';
+            }
           }
         }
         incut = true;
@@ -387,16 +392,16 @@ void detect_outliers2(
         incut          = false;
         bin_frag_start = pos;
       }
-      //tmp_output_file << fixed << setprecision(6) <<
-      //ctg                                      << '\t' <<
-      //pos * window + 1                         << '\t' <<
-      //(pos + 1) * window                       << '\t' <<
-      //score_molecule_coverages[chrid][pos]     << '\t' <<
-      //score_mid_molecule_coverages[chrid][pos] << '\t' <<
-      //score_mean_lengths[chrid][pos]           << '\t' <<
-      //score_read_densities[chrid][pos]         << '\t' <<
-      //score_n_starts[chrid][pos]               << '\t' <<
-      //score_n_ends[chrid][pos]                 << '\n';
+      // tmp_output_file << fixed << setprecision(6) <<
+      // ctg                                      << '\t' <<
+      // pos * window + 1                         << '\t' <<
+      // (pos + 1) * window                       << '\t' <<
+      // score_molecule_coverages[chrid][pos]     << '\t' <<
+      // score_mid_molecule_coverages[chrid][pos] << '\t' <<
+      // score_mean_lengths[chrid][pos]           << '\t' <<
+      // score_read_densities[chrid][pos]         << '\t' <<
+      // score_n_starts[chrid][pos]               << '\t' <<
+      // score_n_ends[chrid][pos]                 << '\n';
     }
     std::cout << "Analyzing contig #" << chrid << "/" << nchrs << ".\r" << std::flush;
     if (! incut) {

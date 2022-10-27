@@ -21,6 +21,7 @@ void detect_outliers2(
     std::vector < std::string >              &ctg_names,
     std::vector < long int >                 &ctg_sizes,
     int                                       window,
+    int                                       min_ctg_size,
     long                                      n_samples,
     std::string                              &output_file_name);
 

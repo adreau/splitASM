@@ -30,6 +30,7 @@ static void show_usage(string name)
               << "\t-c, --contigs FILE\tContig size file name \n"
               << "\t-o, --output FILE\tOutput bed file name \n"
 	            << "\t-s, --sampleSize INT\tSample size for outlier detection, if zero or not specified then the sample is the input size"
+	            << "\t-m, --minSize INT\tMinimum contig size (default 2 x window size)"
               << endl;
 }
 
@@ -103,6 +104,7 @@ int main (int argc, char* argv[])
   string bedFile = "";
   int lines_per_thread;
   long n_sample = 0;
+  int min_ctg_size = 2 * window;
 
   for (int i = 1; i < argc; ++i) {
       string arg = argv[i];
@@ -119,6 +121,8 @@ int main (int argc, char* argv[])
             bedFile = argv[++i];
           } else if ((arg == "-s") || (arg == "--sampleSize")){
 	          n_sample = stoi(argv[++i]);
+          } else if ((arg == "-m") || (arg == "--minSize")){
+	          min_ctg_size = stoi(argv[++i]);
 	        }else {
             molecule_file = argv[i++];
           }
@@ -183,6 +187,7 @@ int main (int argc, char* argv[])
     chr_names,
     chr_sizes,
     window,
+    min_ctg_size,
     n_sample,
     bedFile);
 
