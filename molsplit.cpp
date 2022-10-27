@@ -24,8 +24,8 @@ static void show_usage(string name)
 {
     cerr << "Usage: " << name << " <option(s)> MOLECULE FILE \n"
               << "Options:\n"
-              << "\t-h,--help\t\tShow this help message\n"
-              << "\t-t,--threads INT\tNumber of threads (default 1) \n"
+              << "\t-h, --help\t\tShow this help message\n"
+              << "\t-t, --threads INT\tNumber of threads (default 1) \n"
               << "\t-w, --window INT\tWindow size for outliers detection (default 10kb) \n"
               << "\t-c, --contigs FILE\tContig size file name \n"
               << "\t-o, --output FILE\tOutput bed file name \n"
@@ -98,7 +98,7 @@ int main (int argc, char* argv[])
 
   int threads = 1;
   int window = 10000;
-  string contigFile = "";
+  string contigFileName = "";
   string molecule_file = "";
   string bedFile = "";
   int lines_per_thread;
@@ -114,7 +114,7 @@ int main (int argc, char* argv[])
           } else if ((arg == "-w") || (arg == "--window")) {
             window = stoi(argv[++i]);
           } else if ((arg == "-c") || (arg == "--contigs")){
-            contigFile = argv[++i];
+            contigFileName = argv[++i];
           } else if ((arg == "-o") || (arg == "--output")){
             bedFile = argv[++i];
           } else if ((arg == "-s") || (arg == "--sampleSize")){
@@ -124,7 +124,70 @@ int main (int argc, char* argv[])
           }
   }
 
-  cout << "File : " << molecule_file << " Window :"<< window << " Threads:" << threads << endl;
+  std::vector < std::string > chr_names;
+  std::vector < long int > chr_sizes;
+
+  ifstream contigFile(contigFileName);
+  string line, contig;
+  long int size;
+  if (! contigFile.is_open()) {
+    cerr << "Cannot open contig file.\n";
+    exit(EXIT_FAILURE);
+  }
+  while(getline(contigFile, line)) {
+    stringstream streamedLine (line);
+    streamedLine >> contig >> size;
+    chr_names.push_back(contig);
+    chr_sizes.push_back(size);
+  }
+  chr_names.shrink_to_fit();
+  chr_sizes.shrink_to_fit();
+
+  string output_file_name ("tmp.out");
+  std::vector < std::vector < double > > molecule_coverages;
+  std::vector < std::vector < double > > middle_mol_coverages;
+  std::vector < std::vector < double > > molecule_lengths;
+  std::vector < std::vector < double > > molecule_read_densities;
+  std::vector < std::vector < double > > starting_molecules;
+  std::vector < std::vector < double > > ending_molecules;
+  std::vector < std::vector < double > > score_molecule_coverages;
+  std::vector < std::vector < double > > score_middle_mol_coverages;
+  std::vector < std::vector < double > > score_molecule_lengths;
+  std::vector < std::vector < double > > score_molecule_read_densities;
+  std::vector < std::vector < double > > score_starting_molecules;
+  std::vector < std::vector < double > > score_ending_molecules;
+  molecule_stat2(
+    molecule_file,
+    molecule_coverages,
+    middle_mol_coverages,
+    molecule_lengths,
+    molecule_read_densities,
+    starting_molecules,
+    ending_molecules,
+    chr_names,
+    chr_sizes,
+    window);
+  detect_outliers2(
+    molecule_coverages,
+    middle_mol_coverages,
+    molecule_lengths,
+    molecule_read_densities,
+    starting_molecules,
+    ending_molecules,
+    score_molecule_coverages,
+    score_middle_mol_coverages,
+    score_molecule_lengths,
+    score_molecule_read_densities,
+    score_starting_molecules,
+    score_ending_molecules,
+    chr_names,
+    chr_sizes,
+    window,
+    n_sample,
+    bedFile);
+
+
+  exit(EXIT_SUCCESS);
 
 
   if (threads>1){
@@ -173,7 +236,7 @@ int main (int argc, char* argv[])
 
     }
 
-    createBed (tmpStructfiles, contigFile, bedFile);
+    createBed (tmpStructfiles, contigFileName, bedFile);
 
   }
 

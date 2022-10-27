@@ -23,7 +23,7 @@ void read_molecule_line_old(string molecule_line, string &ctg, int &beg, int &en
 }
 
 void read_molecule_line(string molecule_line, string &ctg, int &beg, int &end,
-                        string &bc, int &reads){
+                        string &bc, double &reads){
 
     stringstream  linestream(molecule_line);
     linestream >> ctg >> beg >> end >> bc >> reads;
@@ -243,53 +243,75 @@ void molecule_stat(string tmp_file, string stat_file)
 
 }
 
-void molecule_stat2(string &input_file_name, string &output_file_name, std::vector < std::string > &chr_names, std::vector < long int > &chr_sizes, int window)
+void molecule_stat2(
+    std::string                            &input_file_name,
+    std::vector < std::vector < double > > &molecule_coverage,
+    std::vector < std::vector < double > > &middle_mol_coverage,
+    std::vector < std::vector < double > > &molecule_length,
+    std::vector < std::vector < double > > &molecule_read_density,
+    std::vector < std::vector < double > > &starting_molecules,
+    std::vector < std::vector < double > > &ending_molecules,
+    std::vector < std::string >            &chr_names,
+    std::vector < long int >               &chr_sizes,
+    int                                     window)
 {
 
-  ifstream input_file(input_file_name.c_str());
-
-  ofstream output_file(output_file_name.c_str(), ofstream::out);
 
   size_t nchrs = chr_names.size();
   std::unordered_map < std::string, size_t > chr_map; // map chr name to ids
-  std::vector< std::vector < double > > molecule_coverage(nchrs);
-  std::vector< std::vector < double > > middle_mol_coverage(nchrs);
-  std::vector< std::vector < double > > molecule_length(nchrs);
-  std::vector< std::vector < double > > molecule_read_density(nchrs);
-  std::vector< std::vector < int > >    starting_molecules(nchrs);
-  std::vector< std::vector < int > >    ending_molecules(nchrs);
+  molecule_coverage.resize(nchrs);
+  middle_mol_coverage.resize(nchrs);
+  molecule_length.resize(nchrs);
+  molecule_read_density.resize(nchrs);
+  starting_molecules.resize(nchrs);
+  ending_molecules.resize(nchrs);
 
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     chr_map[chr_names[chrid]] = chrid;
-    long int size = chr_sizes[chrid] / window;
+    long int size = chr_sizes[chrid] / window + 1;
     molecule_coverage[chrid]     = std::vector < double > (size, 0);
     middle_mol_coverage[chrid]   = std::vector < double > (size, 0);
     molecule_length[chrid]       = std::vector < double > (size, 0);
     molecule_read_density[chrid] = std::vector < double > (size, 0);
-    starting_molecules[chrid]    = std::vector < int > (size, 0);
-    ending_molecules[chrid]      = std::vector < int > (size, 0);
+    starting_molecules[chrid]    = std::vector < double > (size, 0);
+    ending_molecules[chrid]      = std::vector < double > (size, 0);
   }
 
   std::string line;
   string ctg, bc;
-  int beg, end, reads;
+  int beg, end;
+  double reads;
+  unsigned long int cpt = 0;
 
+  ifstream input_file(input_file_name.c_str());
   while(getline(input_file, line)) {
 
     read_molecule_line(line, ctg, beg, end, bc, reads);
+
+    // Easier to work with 0-based positions
+    --beg;
+    --end;
 
     int window_start = beg / window;
     int window_end   = end / window;
     int molecule_size = end - beg + 1;
     
+    if (chr_map.find(ctg) == chr_map.end()) {
+      cerr << "Contig " << ctg << " is not present in the contig file.\n";
+      exit(EXIT_FAILURE);
+    }
     size_t chrid = chr_map[ctg];
     for (int windowid = window_start; windowid <= window_end; ++windowid) {
+      if (windowid >= molecule_coverage[chrid].size()) {
+        cerr << "Molecule size " << ctg << ":" << beg << "-" << end << " out of range.\n";
+        exit(EXIT_FAILURE);
+      }
       int beg_window = std::max < int > (windowid * window, beg);
       int end_window = std::min < int > (beg_window + window - 1, end);
       int size = end_window - beg_window + 1;
       molecule_coverage[chrid][windowid] += size;
       molecule_length[chrid][windowid] += molecule_size * size;
-      molecule_read_density[chrid][windowid] += reads * size;
+      molecule_read_density[chrid][windowid] += reads / molecule_size * size;
     }
     ++starting_molecules[chrid][window_start];
     ++ending_molecules[chrid][window_end];
@@ -306,22 +328,28 @@ void molecule_stat2(string &input_file_name, string &output_file_name, std::vect
       int size = end_window - beg_window + 1;
       middle_mol_coverage[chrid][windowid] += size;
     }
+    ++cpt;
+    if (cpt % 10000000 == 0) cout << cpt << " lines read.\r" << std::flush;
   }
+  cout << cpt << " lines read, done.\n";
 
+  // ofstream output_file(output_file_name.c_str(), ofstream::out);
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    string &chr = chr_names[chrid];
     long int size = chr_sizes[chrid] / window;
-    for (size_t windowid; windowid < size; ++windowid) {
+    for (size_t windowid = 0; windowid <= size; ++windowid) {
       int beg_window = windowid * window;
       int end_window = std::min < int > (beg_window + window - 1, chr_sizes[chrid]);
       double size_dbl = static_cast < double > (end_window - beg_window + 1);
       // Careful in the order of normalization
       molecule_coverage[chrid][windowid]     /= size_dbl;
       middle_mol_coverage[chrid][windowid]   /= size_dbl;
-      molecule_length[chrid][windowid]       /= molecule_coverage[chrid][windowid];
-      molecule_read_density[chrid][windowid] /= molecule_coverage[chrid][windowid];
+      molecule_length[chrid][windowid]       /= molecule_coverage[chrid][windowid] * window;
+      molecule_read_density[chrid][windowid] /= molecule_coverage[chrid][windowid] * window;
 
-      output_file << molecule_coverage[chrid][windowid] << tab << middle_mol_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << starting_molecules[chrid][windowid] << tab << ending_molecules[chrid][windowid] << "\n";
+      // Switch back to 1-based positions
+      // output_file << chr << tab << windowid * window + 1 << tab << (windowid + 1) * window << tab << molecule_coverage[chrid][windowid] << tab << middle_mol_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << tab << starting_molecules[chrid][windowid] << tab << ending_molecules[chrid][windowid] << "\n";
     }
   }
-
+  // output_file.close();
 }

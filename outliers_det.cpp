@@ -112,11 +112,9 @@ void normalize(vector<double> &X, long n, long d) {
 
 }
 
-void compute_score(vector<double> stat, long n, long d, long n_sample, long seed, vector<double> &score){
+void compute_score(vector<double> &stat, long n, long d, long n_sample, long seed, vector<double> &score){
 
-  for(int i=0;i<n;i++){
-    score.push_back(0);
-  }
+  score = vector < double > (stat.size(), 0);
   normalize(stat, n, d);
 
   if(n_sample != 0) {
@@ -322,4 +320,91 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
   out_contig_struct.close();
 
 
+}
+
+
+void detect_outliers2(
+    std::vector < std::vector < double > >   &molecule_coverages,
+    std::vector < std::vector < double > >   &mid_molecule_coverages,
+    std::vector < std::vector < double > >   &mean_lengths,
+    std::vector < std::vector < double > >   &read_densities,
+    std::vector < std::vector < double > >   &n_starts,
+    std::vector < std::vector < double > >   &n_ends,
+    std::vector < std::vector < double > >   &score_molecule_coverages,
+    std::vector < std::vector < double > >   &score_mid_molecule_coverages,
+    std::vector < std::vector < double > >   &score_mean_lengths,
+    std::vector < std::vector < double > >   &score_read_densities,
+    std::vector < std::vector < double > >   &score_n_starts,
+    std::vector < std::vector < double > >   &score_n_ends,
+    std::vector < std::string >              &ctg_names,
+    std::vector < long int >                 &ctg_sizes,
+    int                                       window,
+    long                                      n_samples,
+    std::string                              &output_file_name) {
+
+  // ofstream tmp_output_file("out2.tmp", ofstream::out);
+  ofstream output_file(output_file_name, ofstream::out);
+
+  size_t nchrs = ctg_names.size();
+  int seed = 0;
+  score_molecule_coverages.resize(nchrs);
+  score_mid_molecule_coverages.resize(nchrs);
+  score_mean_lengths.resize(nchrs);
+  score_read_densities.resize(nchrs);
+  score_n_starts.resize(nchrs);
+  score_n_ends.resize(nchrs);
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    int d = 1;
+    size_t npos = molecule_coverages[chrid].size();
+    std::string &ctg = ctg_names[chrid];
+    compute_score(molecule_coverages[chrid],     npos, d, n_samples, seed, score_molecule_coverages[chrid]);
+    compute_score(mid_molecule_coverages[chrid], npos, d, n_samples, seed, score_mid_molecule_coverages[chrid]);
+    compute_score(mean_lengths[chrid],           npos, d, n_samples, seed, score_mean_lengths[chrid]);
+    compute_score(read_densities[chrid],         npos, d, n_samples, seed, score_read_densities[chrid]);
+    compute_score(n_starts[chrid],               npos, d, n_samples, seed, score_n_starts[chrid]);
+    compute_score(n_ends[chrid],                 npos, d, n_samples, seed, score_n_ends[chrid]);
+
+    bool incut          = false;
+    int  bin_frag_start = 0;
+
+    for (int pos = 0; pos < npos; ++pos) {
+      if (splitCondition(
+            score_molecule_coverages[chrid][pos],
+            score_mean_lengths[chrid][pos],
+            score_read_densities[chrid][pos],
+            score_n_starts[chrid][pos],
+            score_n_ends[chrid][pos])) {
+        if (! incut) {
+          // Do not print if we start with a cut
+          // Output in BED format
+          if (pos > 0) {
+            output_file << ctg << '\t' << bin_frag_start * window << '\t' << pos * window << '\n';
+          }
+        }
+        incut = true;
+      }
+      else if (incut) {
+        incut          = false;
+        bin_frag_start = pos;
+      }
+      //tmp_output_file << fixed << setprecision(6) <<
+      //ctg                                      << '\t' <<
+      //pos * window + 1                         << '\t' <<
+      //(pos + 1) * window                       << '\t' <<
+      //score_molecule_coverages[chrid][pos]     << '\t' <<
+      //score_mid_molecule_coverages[chrid][pos] << '\t' <<
+      //score_mean_lengths[chrid][pos]           << '\t' <<
+      //score_read_densities[chrid][pos]         << '\t' <<
+      //score_n_starts[chrid][pos]               << '\t' <<
+      //score_n_ends[chrid][pos]                 << '\n';
+    }
+    std::cout << "Analyzing contig #" << chrid << "/" << nchrs << ".\r" << std::flush;
+    if (! incut) {
+      // Output in BED format
+      output_file << ctg << '\t' << bin_frag_start * window << '\t' << ctg_sizes[chrid] << '\n';
+    }
+  }
+  std::cout << "Analyzing contig #" << nchrs << "/" << nchrs << ".\n";
+
+  output_file.close();
 }
