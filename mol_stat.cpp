@@ -7,25 +7,24 @@
 #include "ring.h"
 #include "mol_stat.h"
 
-using namespace std;
 
 const char tab = '\t';
 const int buffer_size = 300000; //maximum number of overlapping molecules
 
 const int min_extremity_length = 1500; //the core of a molecule is at 1.5kb from extremities
 
-void read_molecule_line_old(string molecule_line, string &ctg, int &beg, int &end,
-                        string &bc, int &reads, int &id){
+void read_molecule_line_old(std::string molecule_line, std::string &ctg, int &beg, int &end,
+                        std::string &bc, int &reads, int &id){
 
-    stringstream  linestream(molecule_line);
+    std::stringstream  linestream(molecule_line);
     linestream >> ctg >> beg >> end >> bc >> reads >> id;
 
 }
 
-void read_molecule_line(string molecule_line, string &ctg, int &beg, int &end,
-                        string &bc, double &reads){
+void read_molecule_line(std::string molecule_line, std::string &ctg, int &beg, int &end,
+                        std::string &bc, double &reads){
 
-    stringstream  linestream(molecule_line);
+    std::stringstream  linestream(molecule_line);
     linestream >> ctg >> beg >> end >> bc >> reads;
 
 }
@@ -46,12 +45,12 @@ void init_ring_buffer(ring<double>& buffer){
 
 }
 
-void molecule_stat(string tmp_file, string stat_file)
+void molecule_stat(std::string tmp_file, std::string stat_file)
 {
 
-  ifstream molecule_list(tmp_file.c_str());
+  std::ifstream molecule_list(tmp_file.c_str());
 
-  ofstream out_mol_stat(stat_file.c_str(), ofstream::out);
+  std::ofstream out_mol_stat(stat_file.c_str(), std::ofstream::out);
 
   ring<int> molecule_coverage(buffer_size);
   init_ring_buffer(molecule_coverage);
@@ -78,15 +77,15 @@ void molecule_stat(string tmp_file, string stat_file)
 
   */
 
-  string prev_ctg = "", current_ctg = "";
+  std::string prev_ctg = "", current_ctg = "";
 
   int begin_pos_stack,pos_end_stack;
   int end_ctg;
 
-  string ctg, bc;
+  std::string ctg, bc;
   int beg, end, reads, id;
 
-  string line;
+  std::string line;
   int mol_size = 0;
   double read_density = 0;
 
@@ -111,7 +110,7 @@ void molecule_stat(string tmp_file, string stat_file)
                 middle_mol_coverage.top() << tab <<
                 (double)molecule_length.top()/molecule_coverage.top() << tab <<
                 (double)molecule_read_density.top()/molecule_coverage.top() << tab <<
-                starting_molecules.top() << tab << ending_molecules.top() << endl;
+                starting_molecules.top() << tab << ending_molecules.top() << std::endl;
 
             molecule_coverage.pop();
             middle_mol_coverage.pop();
@@ -132,7 +131,7 @@ void molecule_stat(string tmp_file, string stat_file)
         out_mol_stat << ctg << tab << i << tab << molecule_coverage.top() << tab <<
         middle_mol_coverage.top() << tab << molecule_length.top() << tab <<
         molecule_read_density.top() << tab << 
-        starting_molecules.top() << tab << ending_molecules.top() << endl;
+        starting_molecules.top() << tab << ending_molecules.top() << std::endl;
 
         molecule_coverage.push(0);
         middle_mol_coverage.push(0);
@@ -168,7 +167,7 @@ void molecule_stat(string tmp_file, string stat_file)
     }else{//then we are in the middle of a contig
 
 
-      end_ctg = max(end_ctg,end);
+      end_ctg = std::max(end_ctg,end);
 
       //print the positions before the beging of the molecule (no next molecule will cover them)
       for(int i = begin_pos_stack; i < beg; i++){
@@ -177,7 +176,7 @@ void molecule_stat(string tmp_file, string stat_file)
         middle_mol_coverage.top() << tab <<
         (double)molecule_length.top()/molecule_coverage.top() << tab <<
         (double)molecule_read_density.top()/molecule_coverage.top() << tab <<
-        starting_molecules.top() << tab << ending_molecules.top() << endl;
+        starting_molecules.top() << tab << ending_molecules.top() << std::endl;
 
         molecule_coverage.push(0);
         middle_mol_coverage.push(0);
@@ -228,7 +227,7 @@ void molecule_stat(string tmp_file, string stat_file)
           middle_mol_coverage.top() << tab <<
           (double)molecule_length.top()/molecule_coverage.top() << tab <<
           (double)molecule_read_density.top()/molecule_coverage.top() << tab <<
-          starting_molecules.top() << tab << ending_molecules.top() << endl;
+          starting_molecules.top() << tab << ending_molecules.top() << std::endl;
 
       molecule_coverage.pop();
       middle_mol_coverage.pop();
@@ -253,7 +252,8 @@ void molecule_stat2(
     std::vector < std::vector < double > > &ending_molecules,
     std::vector < std::string >            &chr_names,
     std::vector < long int >               &chr_sizes,
-    int                                     window)
+    int                                     window,
+    std::string                            &statsFileName1)
 {
 
 
@@ -278,12 +278,12 @@ void molecule_stat2(
   }
 
   std::string line;
-  string ctg, bc;
+  std::string ctg, bc;
   int beg, end;
   double reads;
   unsigned long int cpt = 0;
 
-  ifstream input_file(input_file_name.c_str());
+  std::ifstream input_file(input_file_name.c_str());
   while(getline(input_file, line)) {
 
     read_molecule_line(line, ctg, beg, end, bc, reads);
@@ -297,13 +297,13 @@ void molecule_stat2(
     int molecule_size = end - beg + 1;
     
     if (chr_map.find(ctg) == chr_map.end()) {
-      cerr << "Contig " << ctg << " is not present in the contig file.\n";
+      std::cerr << "Contig " << ctg << " is not present in the contig file.\n";
       exit(EXIT_FAILURE);
     }
     size_t chrid = chr_map[ctg];
     for (int windowid = window_start; windowid <= window_end; ++windowid) {
       if (windowid >= molecule_coverage[chrid].size()) {
-        cerr << "Molecule size " << ctg << ":" << beg << "-" << end << " out of range.\n";
+        std::cerr << "Molecule size " << ctg << ":" << beg << "-" << end << " out of range.\n";
         exit(EXIT_FAILURE);
       }
       int beg_window = std::max < int > (windowid * window, beg);
@@ -332,13 +332,15 @@ void molecule_stat2(
       }
     }
     ++cpt;
-    if (cpt % 10000000 == 0) cout << cpt << " lines read.\r" << std::flush;
+    if (cpt % 10000000 == 0) std::cout << cpt << " lines read.\r" << std::flush;
   }
-  cout << cpt << " lines read, done.\n";
+  std::cout << cpt << " lines read, done.\n";
 
-  // ofstream output_file("tmp.out", ofstream::out);
+  std::ofstream statsFile1;
+  if (! statsFileName1.empty()) statsFile1.open(statsFileName1, std::ofstream::out);
+
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
-    string &chr = chr_names[chrid];
+    std::string &chr = chr_names[chrid];
     long int size = chr_sizes[chrid] / window;
     for (size_t windowid = 0; windowid <= size; ++windowid) {
       int beg_window = windowid * window;
@@ -357,8 +359,8 @@ void molecule_stat2(
       }
 
       // Switch back to 1-based positions
-      // output_file << chr << tab << windowid * window + 1 << tab << (windowid + 1) * window << tab << molecule_coverage[chrid][windowid] << tab << middle_mol_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << tab << starting_molecules[chrid][windowid] << tab << ending_molecules[chrid][windowid] << "\n";
+      if (! statsFileName1.empty()) statsFile1 << chr << tab << windowid * window + 1 << tab << (windowid + 1) * window << tab << molecule_coverage[chrid][windowid] << tab << middle_mol_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << tab << starting_molecules[chrid][windowid] << tab << ending_molecules[chrid][windowid] << "\n";
     }
   }
-  // output_file.close();
+  if (! statsFileName1.empty()) statsFile1.close();
 }

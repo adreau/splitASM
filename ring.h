@@ -5,8 +5,6 @@
 #include <vector>
 #include <initializer_list>
 
-using namespace std;
-
 template <class T>
 class ring
 {

@@ -7,12 +7,11 @@
 #include <cmath>
 #include <ctime>
 #include <iomanip>
-using namespace std;
 
 #include "outliers_det.h"
 const char tab='\t';
 
-long checkArray(long id_current, long n_sample, vector<long> &id_sample) {
+long checkArray(long id_current, long n_sample, std::vector<long> &id_sample) {
   long i;
 
   for (i = 0; i < n_sample; i++) {
@@ -23,7 +22,7 @@ long checkArray(long id_current, long n_sample, vector<long> &id_sample) {
 }
 // random sampling
 // if seed = 0, seed is randomely set
-void sampling(long n_sample, long min, long max, long seed, vector<long> &id_sample) {
+void sampling(long n_sample, long min, long max, long seed, std::vector<long> &id_sample) {
   long i, j = 0;
   time_t t;
 
@@ -42,9 +41,9 @@ void sampling(long n_sample, long min, long max, long seed, vector<long> &id_sam
 // input  -> X: data matrix (array), n: # of objects, d: # of dimensions, Xs:
 // sample set, sid: sample indexes, ns: # of samples
 // output -> result: an array of qsps
-void qsp(vector<double> &X, long n, long d, long n_sample, long seed, vector<double> &score) {
+void qsp(std::vector<double> &X, long n, long d, long n_sample, long seed, std::vector<double> &score) {
   long i, j, point;
-  vector<long> id_sample;
+  std::vector<long> id_sample;
   double sum, res;
 
   // random sampling
@@ -75,10 +74,10 @@ void qsp(vector<double> &X, long n, long d, long n_sample, long seed, vector<dou
 
 
 // normalization of data (divide by SDs for each dimension)
-void normalize(vector<double> &X, long n, long d) {
+void normalize(std::vector<double> &X, long n, long d) {
   long i, j, flag;
   double sum;
-  vector<double> X_means;
+  std::vector<double> X_means;
 
   for(int k=0;k<d;k++)
     X_means.push_back(0);
@@ -112,13 +111,13 @@ void normalize(vector<double> &X, long n, long d) {
 
 }
 
-void compute_score(vector<double> &stat, long n, long d, long n_sample, long seed, vector<double> &score){
+void compute_score(std::vector<double> &stat, long n, long d, long n_sample, long seed, std::vector<double> &score){
 
-  score = vector < double > (stat.size(), 0);
+  score = std::vector < double > (stat.size(), 0);
   normalize(stat, n, d);
 
   if(n_sample != 0) {
-    n_sample = min(n_sample,n);
+    n_sample = std::min(n_sample,n);
   }else{
     n_sample = n;
   }
@@ -138,42 +137,42 @@ bool splitCondition(double score_molCov, double score_molLength, double score_re
   return condition1 || condition2;
 }
 
-void detect_outliers(string stat_per_interval_file, string out_contig_struct_file, string out_distance_scores_file, long n_sample)
+void detect_outliers(std::string stat_per_interval_file, std::string out_contig_struct_file, std::string out_distance_scores_file, long n_sample)
 {
 
 
-  string molecule_stat_file = stat_per_interval_file;
-  ifstream molecule_stat(molecule_stat_file.c_str());
+  std::string molecule_stat_file = stat_per_interval_file;
+  std::ifstream molecule_stat(molecule_stat_file.c_str());
 
 
-  ofstream out_contig_struct(out_contig_struct_file.c_str(), ofstream::out);
-  ofstream out_distance_scores(out_distance_scores_file.c_str(), ofstream::out);
+  std::ofstream out_contig_struct(out_contig_struct_file.c_str(), std::ofstream::out);
+  std::ofstream out_distance_scores(out_distance_scores_file.c_str(), std::ofstream::out);
 
-  string line;
+  std::string line;
   int count_lines = 0;
 
-  string molecule_line, ctg;
+  std::string molecule_line, ctg;
   int pos_beg, pos_end;
   double mol_cov, mid_mol_cov, mean_length, read_dens, mol_beg, mol_end;
 
-  string prev_ctg = "", current_ctg = "";
+  std::string prev_ctg = "", current_ctg = "";
 
-  vector<int> posBegList;
-  vector<int> posEndList;
-  vector<double> midMolCovList;
-  vector<double> meanLengthList;
-  vector<double> readDensList;
-  vector<double> molBegList;
-  vector<double> molEndList;
+  std::vector<int> posBegList;
+  std::vector<int> posEndList;
+  std::vector<double> midMolCovList;
+  std::vector<double> meanLengthList;
+  std::vector<double> readDensList;
+  std::vector<double> molBegList;
+  std::vector<double> molEndList;
 
-  vector<double> score_molCov;
-  vector<double> score_molLength;
-  vector<double> score_readDens;
-  vector<double> score_molBeg;
-  vector<double> score_molEnd;
+  std::vector<double> score_molCov;
+  std::vector<double> score_molLength;
+  std::vector<double> score_readDens;
+  std::vector<double> score_molBeg;
+  std::vector<double> score_molEnd;
 
-  vector<double> values_multipleD;
-  vector<double> score_multipeD;
+  std::vector<double> values_multipleD;
+  std::vector<double> score_multipeD;
 
 
   long n, d, seed;
@@ -183,7 +182,7 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
 
   while(getline(molecule_stat,molecule_line)){
 
-    stringstream  linestream(molecule_line);
+      std::stringstream  linestream(molecule_line);
     linestream >> ctg >> pos_beg >> pos_end >> mol_cov >> mid_mol_cov >> mean_length >> read_dens >> mol_beg >> mol_end;
     current_ctg = ctg;
 
@@ -216,15 +215,15 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
         cut = false;
 
         for (int i = 0; i < n; i++) {
-          out_distance_scores << fixed << setprecision(6)<< prev_ctg << '\t'<< posBegList[i]
+          out_distance_scores << std::fixed << std::setprecision(6)<< prev_ctg << '\t'<< posBegList[i]
                               <<'\t'<< posEndList[i]<<'\t'<<score_molCov[i]<<'\t'<<score_molLength[i]
-                              <<'\t'<< score_readDens[i]<<'\t'<<score_molBeg[i]<<'\t'<<score_molEnd[i]<< '\t'<<values_multipleD[i]<<endl;
+                              <<'\t'<< score_readDens[i]<<'\t'<<score_molBeg[i]<<'\t'<<score_molEnd[i]<< '\t'<<values_multipleD[i]<< std::endl;
 
           if( splitCondition(score_molCov[i], score_molLength[i],score_readDens[i], score_molBeg[i], score_molEnd[i]) ){
 
                if(!cut){
 
-                 out_contig_struct << prev_ctg <<'\t' << beginInterval << '\t' << posBegList[i]<<endl;
+                 out_contig_struct << prev_ctg <<'\t' << beginInterval << '\t' << posBegList[i]<< std::endl;
                  beginInterval = posBegList[i];
                  cut = true;
 
@@ -232,7 +231,7 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
           }else{
             if(cut){
 
-              out_contig_struct << prev_ctg << '\t' << beginInterval << '\t' << posBegList[i]<<endl;
+              out_contig_struct << prev_ctg << '\t' << beginInterval << '\t' << posBegList[i]<< std::endl;
               cut = false;
               beginInterval = posBegList[i];
 
@@ -241,7 +240,7 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
 
         }
 
-        out_contig_struct << prev_ctg << '\t' << beginInterval << '\t' << posEndList[n-1]<< endl;
+        out_contig_struct << prev_ctg << '\t' << beginInterval << '\t' << posEndList[n-1]<< std::endl;
 
         posBegList.clear();
         posEndList.clear();
@@ -284,16 +283,16 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
   cut = false;
 
   for (int i = 0; i < n; i++) {
-    out_distance_scores << fixed << setprecision(6)<< ctg << '\t'<< posBegList[i]
+    out_distance_scores << std::fixed << std::setprecision(6)<< ctg << '\t'<< posBegList[i]
                         <<'\t'<< posEndList[i]<<'\t'<<score_molCov[i]<<'\t'<<score_molLength[i]
-                        <<'\t'<< score_readDens[i]<<'\t'<<score_molBeg[i]<<'\t'<<score_molEnd[i]<<'\t'<<values_multipleD[i]<<endl;
+                        <<'\t'<< score_readDens[i]<<'\t'<<score_molBeg[i]<<'\t'<<score_molEnd[i]<<'\t'<<values_multipleD[i]<< std::endl;
 
     if( splitCondition(score_molCov[i], score_molLength[i],score_readDens[i], score_molBeg[i], score_molEnd[i])){
 
          if(!cut){
 
            if (posBegList[i]>beginInterval ){
-             out_contig_struct << ctg <<'\t' << beginInterval << '\t' << posBegList[i]<<endl;
+             out_contig_struct << ctg <<'\t' << beginInterval << '\t' << posBegList[i]<< std::endl;
            }
            beginInterval = posBegList[i];
            cut = true;
@@ -302,7 +301,7 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
     }else{
       if(cut){
 
-        out_contig_struct << ctg << '\t' << beginInterval << '\t' << posBegList[i]<<endl;
+        out_contig_struct << ctg << '\t' << beginInterval << '\t' << posBegList[i]<< std::endl;
         cut = false;
         beginInterval = posBegList[i];
 
@@ -311,7 +310,7 @@ void detect_outliers(string stat_per_interval_file, string out_contig_struct_fil
 
   }
 
-  out_contig_struct << ctg << '\t' << beginInterval << '\t' << posEndList[n-1]<< endl;
+  out_contig_struct << ctg << '\t' << beginInterval << '\t' << posEndList[n-1]<< std::endl;
 
 
 
@@ -341,10 +340,12 @@ void detect_outliers2(
     int                                       window,
     int                                       min_ctg_size,
     long                                      n_samples,
-    std::string                              &output_file_name) {
+    std::string                              &output_file_name,
+    std::string                              &statsFileName2) {
 
-  // ofstream tmp_output_file("out2.tmp", ofstream::out);
-  ofstream output_file(output_file_name, ofstream::out);
+  std::ofstream output_file(output_file_name, std::ofstream::out);
+  std::ofstream statsFile2;
+  if (! statsFileName2.empty()) statsFile2.open(statsFileName2, std::ofstream::out);
 
   size_t nchrs = ctg_names.size();
   int seed = 0;
@@ -392,16 +393,16 @@ void detect_outliers2(
         incut          = false;
         bin_frag_start = pos;
       }
-      // tmp_output_file << fixed << setprecision(6) <<
-      // ctg                                      << '\t' <<
-      // pos * window + 1                         << '\t' <<
-      // (pos + 1) * window                       << '\t' <<
-      // score_molecule_coverages[chrid][pos]     << '\t' <<
-      // score_mid_molecule_coverages[chrid][pos] << '\t' <<
-      // score_mean_lengths[chrid][pos]           << '\t' <<
-      // score_read_densities[chrid][pos]         << '\t' <<
-      // score_n_starts[chrid][pos]               << '\t' <<
-      // score_n_ends[chrid][pos]                 << '\n';
+      if (! statsFileName2.empty()) statsFile2 << std::fixed << std::setprecision(6) <<
+          ctg                                      << '\t' <<
+          pos * window + 1                         << '\t' <<
+          (pos + 1) * window                       << '\t' <<
+          score_molecule_coverages[chrid][pos]     << '\t' <<
+          score_mid_molecule_coverages[chrid][pos] << '\t' <<
+          score_mean_lengths[chrid][pos]           << '\t' <<
+          score_read_densities[chrid][pos]         << '\t' <<
+          score_n_starts[chrid][pos]               << '\t' <<
+          score_n_ends[chrid][pos]                 << '\n';
     }
     std::cout << "Analyzing contig #" << chrid << "/" << nchrs << ".\r" << std::flush;
     if (! incut) {
@@ -412,4 +413,6 @@ void detect_outliers2(
   std::cout << "Analyzing contig #" << nchrs << "/" << nchrs << ".\n";
 
   output_file.close();
+
+  if (! statsFileName2.empty()) statsFile2.close();
 }

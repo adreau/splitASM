@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string>
-using namespace std;
-void molecule_stat(string tmp_file, string stat_file);
+
+void molecule_stat(std::string tmp_file, std::string stat_file);
 void molecule_stat2(
     std::string                            &input_file_name,
     std::vector < std::vector < double > > &molecule_coverage,
@@ -13,5 +13,6 @@ void molecule_stat2(
     std::vector < std::vector < double > > &ending_molecules,
     std::vector < std::string >            &chr_names,
     std::vector < long int >               &chr_sizes,
-    int                                     window);
+    int                                     window,
+    std::string                            &statsFileName1);
 
