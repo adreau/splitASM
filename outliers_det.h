@@ -5,7 +5,6 @@
 void detect_outliers(std::string stat_per_interval_file, std::string out_contig_struct_file, std::string out_distance_scores_file, long n_sample);
 void detect_outliers2(
     std::vector < std::vector < double > >   &molecule_coverages,
-    std::vector < std::vector < double > >   &mid_molecule_coverages,
     std::vector < std::vector < double > >   &mean_lengths,
     std::vector < std::vector < double > >   &read_densities,
     std::vector < std::vector < double > >   &n_starts,
@@ -16,4 +15,5 @@ void detect_outliers2(
     int                                       min_ctg_size,
     long                                      n_samples,
     std::string                              &output_file_name,
-    std::string                              &statsFileName2);
+    std::string                              &statsFileName2,
+    float                                     threshold);

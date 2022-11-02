@@ -245,7 +245,6 @@ void molecule_stat(std::string tmp_file, std::string stat_file)
 void molecule_stat2(
     std::string                            &input_file_name,
     std::vector < std::vector < double > > &molecule_coverage,
-    std::vector < std::vector < double > > &middle_mol_coverage,
     std::vector < std::vector < double > > &molecule_length,
     std::vector < std::vector < double > > &molecule_read_density,
     std::vector < std::vector < double > > &starting_molecules,
@@ -259,7 +258,6 @@ void molecule_stat2(
   size_t nchrs = chr_names.size();
   std::unordered_map < std::string, size_t > chr_map; // map chr name to ids
   molecule_coverage.resize(nchrs);
-  middle_mol_coverage.resize(nchrs);
   molecule_length.resize(nchrs);
   molecule_read_density.resize(nchrs);
   starting_molecules.resize(nchrs);
@@ -269,7 +267,6 @@ void molecule_stat2(
     chr_map[chr_names[chrid]] = chrid;
     long int size = (chr_sizes[chrid] - 1) / window + 1;
     molecule_coverage[chrid]     = std::vector < double > (size, 0);
-    middle_mol_coverage[chrid]   = std::vector < double > (size, 0);
     molecule_length[chrid]       = std::vector < double > (size, 0);
     molecule_read_density[chrid] = std::vector < double > (size, 0);
     starting_molecules[chrid]    = std::vector < double > (size, 0);
@@ -283,6 +280,12 @@ void molecule_stat2(
   unsigned long int cpt = 0;
 
   std::ifstream input_file(input_file_name.c_str());
+
+  if(! input_file.is_open()) {
+    std::cerr << "Cannot open file '" << input_file_name << "'\n";
+    exit(EXIT_FAILURE);
+  }
+
   while(getline(input_file, line)) {
 
     read_molecule_line(line, ctg, beg, end, bc, reads);
@@ -315,21 +318,6 @@ void molecule_stat2(
     ++starting_molecules[chrid][window_start];
     ++ending_molecules[chrid][window_end];
 
-    // Considering inner part of molecule
-    beg += min_extremity_length;
-    end -= min_extremity_length;
-
-    if (beg <= end) {
-      window_start = beg / window;
-      window_end   = end / window;
-      
-      for (int windowid = window_start; windowid <= window_end; ++windowid) {
-        int beg_window = std::max < int > (windowid * window, beg);
-        int end_window = std::min < int > (beg_window + window - 1, end);
-        int size = end_window - beg_window + 1;
-        middle_mol_coverage[chrid][windowid] += size;
-      }
-    }
     ++cpt;
     if (cpt % 10000000 == 0) std::cout << cpt << " lines read.\r" << std::flush;
   }
@@ -347,7 +335,6 @@ void molecule_stat2(
       double size_dbl = static_cast < double > (end_window - beg_window + 1);
       // Careful in the order of normalization
       molecule_coverage[chrid][windowid]   /= size_dbl;
-      middle_mol_coverage[chrid][windowid] /= size_dbl;
       if (molecule_coverage[chrid][windowid] == 0) {
         molecule_length[chrid][windowid]       = 0;
         molecule_read_density[chrid][windowid] = 0;
@@ -358,7 +345,7 @@ void molecule_stat2(
       }
 
       // Switch back to 1-based positions
-      if (! statsFileName1.empty()) statsFile1 << chr << tab << windowid * window + 1 << tab << (windowid + 1) * window << tab << molecule_coverage[chrid][windowid] << tab << middle_mol_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << tab << starting_molecules[chrid][windowid] << tab << ending_molecules[chrid][windowid] << "\n";
+      if (! statsFileName1.empty()) statsFile1 << chr << tab << windowid * window + 1 << tab << (windowid + 1) * window << tab << molecule_coverage[chrid][windowid] << tab << molecule_length[chrid][windowid] << tab << molecule_read_density[chrid][windowid] << tab << starting_molecules[chrid][windowid] << tab << ending_molecules[chrid][windowid] << "\n";
     }
   }
   if (! statsFileName1.empty()) statsFile1.close();

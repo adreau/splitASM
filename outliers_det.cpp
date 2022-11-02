@@ -43,7 +43,8 @@ void sampling(long n_sample, long max, long seed, std::vector<long> &id_sample) 
 
   while (nused < n_sample) {
     srand(seed + j++);
-    long id = rand() % (max + 1);
+    long id = rand() % max;
+    //long id = rand() % (max + 1);
     if (! used[id]) {
       id_sample[nused] = id;
       used[id] = true;
@@ -54,22 +55,26 @@ void sampling(long n_sample, long max, long seed, std::vector<long> &id_sample) 
 }
 
 
-// input  -> X: data matrix (array), n: # of objects, Xs:
+// input  -> X: data matrix (array), n: # of objects, d: # of dimensions, Xs:
 // sample set, sid: sample indexes, ns: # of samples
 // output -> result: an array of qsps
-void qsp(std::vector<double> &X, long n, long n_sample, long seed, std::vector<double> &score) {
-  std::vector<long> id_sample (n_sample, 0);
+void qsp(std::vector < double > &X, long n, int d, long n_sample, long seed, std::vector < double > &score) {
+  std::vector < long > id_sample (n_sample, 0);
 
   sampling(n_sample, n, seed, id_sample);
 
   // compute the outlierness score qsp for each data point
-  for (long unsigned int point = 0; point < n; point++) {
+  for (long unsigned point = 0; point < n; point++) {
     double res = 0;
-    for (long unsigned int i = 0; i < n_sample; i++) {
+    for (long unsigned i = 0; i < n_sample; i++) {
       if (point != id_sample[i]) {
         double sum = 0;
-        sum += fabs(X[point] - X[id_sample[i]]) *
-               fabs(X[point] - X[id_sample[i]]);
+        for (int j = 0; j < d; j++) {
+          // std::cout << "point: " << point << ", d: " << d << ", j: " << j << " / " << X.size() << "\n";
+          // std::cout << "sample: " << id_sample[i] << " / " << n << " -> " << (id_sample[i] * d + j) << "\n";
+          sum += fabs(X[point * d + j] - X[id_sample[i] * d + j]) *
+                 fabs(X[point * d + j] - X[id_sample[i] * d + j]);
+        }
         if (res == 0)
           res = sum;
         else if (sum < res && sum > 0)
@@ -84,42 +89,48 @@ void qsp(std::vector<double> &X, long n, long n_sample, long seed, std::vector<d
 
 
 // normalization of data (divide by SDs for each dimension)
-void normalize(std::vector<double> &X, long n) {
-  double sum;
-  double mean = 0;
+void normalize(std::vector < double > &X, long n, int d) {
+  std::vector < double > X_means (d, 0);
 
-  std::cout << "\tNormalisation...\n";
-
-  sum = 0;
-  for (long unsigned int i = 0; i < n; i++) {
-    sum += X[i];
+  for (int j = 0; j < d; j++) {
+    double sum = 0;
+    for (unsigned long int i = 0; i < n; i++) {
+      sum += X[i * d + j];
+    }
+    X_means[j] = sum / n;
   }
-  mean = sum / n;
 
-  sum = 0;
-  for (long unsigned int i = 0; i < n; i++)
-    sum += (X[i] - mean) * (X[i] - mean);
-  if (sum == 0) {
-    std::cerr << "Warning, distribution has 0 variance (identical value of " << mean << ").\n";
-    return;
+  for (int j = 0; j < d; j++) {
+    bool flag = false;
+    double sum = X[j];
+    for (unsigned long int i = 1; i < n; i++) {
+      if (sum != X[i * d + j]) {
+        flag = true;
+        break;
+      }
+    }
+    if (flag) {
+      sum = 0;
+      for (unsigned long i = 0; i < n; i++)
+        sum += (X[i * d + j] - X_means[j]) * (X[i * d + j] - X_means[j]);
+      sum = sqrt(sum / (n - 1)); // unbiased SD
+      for (unsigned long i = 0; i < n; i++)
+        X[i * d + j] = X[i * d + j] / sum;
+    }
   }
-  sum = sqrt(sum / (n - 1)); // unbiased SD
-  for (long unsigned int i = 0; i < n; i++)
-    X[i] = X[i] / sum;
-  std::cout << "\t... done (SD: " << sum << ").\n";
 }
 
 void compute_score(std::vector<double> &stat, long n, long d, long n_sample, long seed, std::vector<double> &score){
 
   score = std::vector < double > (stat.size(), 0);
-  normalize(stat, n);
+  normalize(stat, d, n);
 
   if(n_sample != 0) {
     n_sample = std::min(n_sample,n);
   }else{
     n_sample = n;
   }
-  qsp(stat, n, n_sample, seed, score);
+  qsp(stat, n, d, n_sample, seed, score);
 
 }
 
@@ -322,7 +333,6 @@ void detect_outliers(std::string stat_per_interval_file, std::string out_contig_
 
 void detect_outliers2(
     std::vector < std::vector < double > >   &molecule_coverages,
-    std::vector < std::vector < double > >   &mid_molecule_coverages,
     std::vector < std::vector < double > >   &mean_lengths,
     std::vector < std::vector < double > >   &read_densities,
     std::vector < std::vector < double > >   &n_starts,
@@ -333,58 +343,53 @@ void detect_outliers2(
     int                                       min_ctg_size,
     long                                      n_samples,
     std::string                              &output_file_name,
-    std::string                              &statsFileName2) {
+    std::string                              &statsFileName2,
+    float                                     threshold) {
 
   std::ofstream output_file(output_file_name, std::ofstream::out);
   std::ofstream statsFile2;
   if (! statsFileName2.empty()) statsFile2.open(statsFileName2, std::ofstream::out);
 
   size_t nchrs = ctg_names.size();
-  size_t nelements = 0;
+  size_t n_elements = 0;
   int seed = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
-    nelements += molecule_coverages[chrid].size();
+    n_elements += molecule_coverages[chrid].size();
   }
-  std::vector < double > all_molecule_coverages;
-  std::vector < double > all_mid_molecule_coverages;
-  std::vector < double > all_mean_lengths;
-  std::vector < double > all_read_densities;
-  std::vector < double > all_n_starts;
-  std::vector < double > all_n_ends;
-  std::vector < double > all_score_molecule_coverages;
-  std::vector < double > all_score_mid_molecule_coverages;
-  std::vector < double > all_score_mean_lengths;
-  std::vector < double > all_score_read_densities;
-  std::vector < double > all_score_n_starts;
-  std::vector < double > all_score_n_ends;
-  all_molecule_coverages    .reserve(nelements);
-  all_mid_molecule_coverages.reserve(nelements);
-  all_mean_lengths          .reserve(nelements);
-  all_read_densities        .reserve(nelements);
-  all_n_starts              .reserve(nelements);
-  all_n_ends                .reserve(nelements);
+  int d = 5;
+  std::vector < double > all_values;
+  std::vector < double > score_all_values (n_elements);
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
-    all_molecule_coverages    .insert(all_molecule_coverages.end(),     molecule_coverages[chrid].begin(),     molecule_coverages[chrid].end());
-    all_mid_molecule_coverages.insert(all_mid_molecule_coverages.end(), mid_molecule_coverages[chrid].begin(), mid_molecule_coverages[chrid].end());
-    all_mean_lengths          .insert(all_mean_lengths.end(),           mean_lengths[chrid].begin(),           mean_lengths[chrid].end());
-    all_read_densities        .insert(all_read_densities.end(),         read_densities[chrid].begin(),         read_densities[chrid].end());
-    all_n_starts              .insert(all_n_starts.end(),               n_starts[chrid].begin(),               n_starts[chrid].end());
-    all_n_ends                .insert(all_n_ends.end(),                 n_ends[chrid].begin(),                 n_ends[chrid].end());
+    all_values.insert(all_values.end(),     molecule_coverages[chrid].begin(),     molecule_coverages[chrid].end());
   }
-  int d = 1;
-  std::cerr << "Detecting outliers in coverages...\n";
-  compute_score(all_molecule_coverages,     nelements, d, n_samples, seed, all_score_molecule_coverages);
-  std::cerr << "Detecting outliers in middle coverages...\n";
-  compute_score(all_mid_molecule_coverages, nelements, d, n_samples, seed, all_score_mid_molecule_coverages);
-  std::cerr << "Detecting outliers in molecule lengths...\n";
-  compute_score(all_mean_lengths,           nelements, d, n_samples, seed, all_score_mean_lengths);
-  std::cerr << "Detecting outliers in read densities...\n";
-  compute_score(all_read_densities,         nelements, d, n_samples, seed, all_score_read_densities);
-  std::cerr << "Detecting outliers in # start positions...\n";
-  compute_score(all_n_starts,               nelements, d, n_samples, seed, all_score_n_starts);
-  std::cerr << "Detecting outliers in # end positions...\n";
-  compute_score(all_n_ends,                 nelements, d, n_samples, seed, all_score_n_ends);
-  std::cerr << "... done.\n";
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    all_values.insert(all_values.end(),           mean_lengths[chrid].begin(),           mean_lengths[chrid].end());
+  }
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    all_values.insert(all_values.end(),         read_densities[chrid].begin(),         read_densities[chrid].end());
+  }
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    all_values.insert(all_values.end(),               n_starts[chrid].begin(),               n_starts[chrid].end());
+  }
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    all_values.insert(all_values.end(),                 n_ends[chrid].begin(),                 n_ends[chrid].end());
+  }
+
+  compute_score(all_values, n_elements, d, n_samples, seed, score_all_values);
+
+//std::cerr << "Detecting outliers in coverages...\n";
+//compute_score(all_molecule_coverages,     n_elements, d, n_samples, seed, all_score_molecule_coverages);
+//std::cerr << "Detecting outliers in middle coverages...\n";
+//compute_score(all_mid_molecule_coverages, n_elements, d, n_samples, seed, all_score_mid_molecule_coverages);
+//std::cerr << "Detecting outliers in molecule lengths...\n";
+//compute_score(all_mean_lengths,           n_elements, d, n_samples, seed, all_score_mean_lengths);
+//std::cerr << "Detecting outliers in read densities...\n";
+//compute_score(all_read_densities,         n_elements, d, n_samples, seed, all_score_read_densities);
+//std::cerr << "Detecting outliers in # start positions...\n";
+//compute_score(all_n_starts,               n_elements, d, n_samples, seed, all_score_n_starts);
+//std::cerr << "Detecting outliers in # end positions...\n";
+//compute_score(all_n_ends,                 n_elements, d, n_samples, seed, all_score_n_ends);
+//std::cerr << "... done.\n";
 
   size_t cpt = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
@@ -394,12 +399,7 @@ void detect_outliers2(
     std::string &ctg    = ctg_names[chrid];
 
     for (int pos = 0; pos < npos; ++pos, ++cpt) {
-      if (splitCondition(
-            all_score_molecule_coverages[cpt],
-            all_score_mean_lengths[cpt],
-            all_score_read_densities[cpt],
-            all_score_n_starts[cpt],
-            all_score_n_ends[cpt])) {
+      if (score_all_values[cpt] > threshold) {
         if (! incut) {
           // Check contig size
           int size = (pos - bin_frag_start) * window;
@@ -418,15 +418,10 @@ void detect_outliers2(
         bin_frag_start = pos;
       }
       if (! statsFileName2.empty()) statsFile2 << std::fixed << std::setprecision(6) <<
-          ctg                                   << '\t' <<
-          pos * window + 1                      << '\t' <<
-          (pos + 1) * window                    << '\t' <<
-          all_score_molecule_coverages[cpt]     << '\t' <<
-          all_score_mid_molecule_coverages[cpt] << '\t' <<
-          all_score_mean_lengths[cpt]           << '\t' <<
-          all_score_read_densities[cpt]         << '\t' <<
-          all_score_n_starts[cpt]               << '\t' <<
-          all_score_n_ends[cpt]                 << '\n';
+          ctg                   << '\t' <<
+          pos * window + 1      << '\t' <<
+          (pos + 1) * window    << '\t' <<
+          score_all_values[cpt] << '\t';
     }
     std::cout << "Analyzing contig #" << chrid << "/" << nchrs << ".\r" << std::flush;
     if (! incut) {

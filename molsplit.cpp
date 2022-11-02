@@ -24,12 +24,14 @@ static void show_usage(std::string name)
     std::cerr << "Usage: " << name << " <option(s)> MOLECULE FILE \n"
               << "Options:\n"
               << "\t-h, --help\t\tShow this help message\n"
-              << "\t-t, --threads INT\tNumber of threads (default 1) \n"
+              << "\t-t, --threshold FLOAT\tStringency threshold (default 0.01, higher is less stringent) \n"
               << "\t-w, --window INT\tWindow size for outliers detection (default 10kb) \n"
               << "\t-c, --contigs FILE\tContig size file name \n"
               << "\t-o, --output FILE\tOutput bed file name \n"
-              << "\t-s, --sampleSize INT\tSample size for outlier detection, if zero or not specified then the sample is the input size"
-              << "\t-m, --minSize INT\tMinimum contig size (default 2 x window size)"
+              << "\t-s, --sampleSize INT\tSample size for outlier detection, if zero or not specified then the sample is the input size\n"
+              << "\t-m, --minSize INT\tMinimum contig size (default 2 x window size)\n"
+              << "\t-a FILE\t\twrite raw counts to file\n"
+              << "\t-A FILE\t\twrite scores to file\n"
               << std::endl;
 }
 
@@ -47,7 +49,7 @@ std::vector<std::string> split_molecule_file(std::string molecule_file, int tmp_
 
     while (getline(molecules,molecule_line)) {
 
-        std::stringstream  linestream(molecule_line);
+      std::stringstream  linestream(molecule_line);
       linestream >> ctg;
       if ((line_count >= tmp_files_size && prev_ctg.compare(ctg)!=0 && file_count<threads) || (file_count == 0)) {
 
@@ -96,7 +98,7 @@ int main (int argc, char* argv[])
       return 1;
   }
 
-  int threads = 1;
+  float threshold = 0.01;
   int window = 10000;
   std::string statsFileName1;
   std::string statsFileName2;
@@ -112,8 +114,8 @@ int main (int argc, char* argv[])
       if ((arg == "-h") || (arg == "--help")) {
           show_usage(argv[0]);
           return 0;
-      } else if ((arg == "-t") || (arg == "--threads")) {
-          threads = std::stoi(argv[++i]);
+      } else if ((arg == "-t") || (arg == "--threshold")) {
+          threshold = std::stof(argv[++i]);
       } else if ((arg == "-w") || (arg == "--window")) {
           window = std::stoi(argv[++i]);
       } else if ((arg == "-c") || (arg == "--contigs")){
@@ -154,7 +156,6 @@ int main (int argc, char* argv[])
 
   std::string output_file_name ("tmp.out");
   std::vector < std::vector < double > > molecule_coverages;
-  std::vector < std::vector < double > > middle_mol_coverages;
   std::vector < std::vector < double > > molecule_lengths;
   std::vector < std::vector < double > > molecule_read_densities;
   std::vector < std::vector < double > > starting_molecules;
@@ -162,7 +163,6 @@ int main (int argc, char* argv[])
   molecule_stat2(
     molecule_file,
     molecule_coverages,
-    middle_mol_coverages,
     molecule_lengths,
     molecule_read_densities,
     starting_molecules,
@@ -173,7 +173,6 @@ int main (int argc, char* argv[])
     statsFileName1);
   detect_outliers2(
     molecule_coverages,
-    middle_mol_coverages,
     molecule_lengths,
     molecule_read_densities,
     starting_molecules,
@@ -184,61 +183,11 @@ int main (int argc, char* argv[])
     min_ctg_size,
     n_sample,
     bedFile,
-    statsFileName2);
+    statsFileName2,
+    threshold);
 
 
   exit(EXIT_SUCCESS);
 
 
-  if (threads>1){
-
-    std::ifstream myfile(molecule_file);
-
-    // new lines will be skipped unless we stop it from happening:
-    myfile.unsetf(std::ios_base::skipws);
-
-    // count the newlines with an algorithm specialized for counting:
-    unsigned line_count = count(
-        std::istream_iterator<char>(myfile),
-        std::istream_iterator<char>(),
-        '\n');
-
-    lines_per_thread = floor(line_count/threads);
-    std::cout << "Lines: " << line_count << " lines_per_thread: " << lines_per_thread << std::endl;
-    std::vector<std::string> tmpfiles = split_molecule_file(molecule_file, lines_per_thread, threads);
-
-    std::thread t[tmpfiles.size()];
-
-    for(int i = 0; i<tmpfiles.size(); i++){
-
-      t[i] = std::thread(split_by_outliers, tmpfiles[i], window, n_sample);
-
-    }
-
-    for(int i = 0; i<tmpfiles.size();i++){
-
-      t[i].join();
-
-    }
-
-
-
-
-    //TODO: concatenate all struct_file
-    std::vector<std::string> tmpStructfiles;
-    std::string base_tmp_file, struct_file;
-
-    for(int i = 0; i<tmpfiles.size(); i++){
-
-      base_tmp_file = std::string(fs::path(tmpfiles[i]).stem());
-      struct_file = base_tmp_file + "_splits.tsv";
-      tmpStructfiles.push_back(struct_file);
-
-    }
-
-    createBed (tmpStructfiles, contigFileName, bedFile);
-
-  }
-
-  return 0;
 }
