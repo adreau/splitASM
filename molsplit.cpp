@@ -113,24 +113,24 @@ int main (int argc, char* argv[])
           show_usage(argv[0]);
           return 0;
       } else if ((arg == "-t") || (arg == "--threads")) {
-            threads = std::stoi(argv[++i]);
-          } else if ((arg == "-w") || (arg == "--window")) {
-            window = std::stoi(argv[++i]);
-          } else if ((arg == "-c") || (arg == "--contigs")){
-            contigFileName = argv[++i];
-          } else if ((arg == "-o") || (arg == "--output")){
-            bedFile = argv[++i];
-          } else if ((arg == "-s") || (arg == "--sampleSize")){
-	          n_sample = std::stoi(argv[++i]);
-          } else if ((arg == "-m") || (arg == "--minSize")){
-	          min_ctg_size = std::stoi(argv[++i]);
-          } else if (arg == "-a") {
-	          statsFileName1 = argv[++i];
-          } else if (arg == "-A") {
-	          statsFileName2 = argv[++i];
-	        }else {
-            molecule_file = argv[i++];
-          }
+          threads = std::stoi(argv[++i]);
+      } else if ((arg == "-w") || (arg == "--window")) {
+          window = std::stoi(argv[++i]);
+      } else if ((arg == "-c") || (arg == "--contigs")){
+          contigFileName = argv[++i];
+      } else if ((arg == "-o") || (arg == "--output")){
+          bedFile = argv[++i];
+      } else if ((arg == "-s") || (arg == "--sampleSize")){
+          n_sample = std::stoi(argv[++i]);
+      } else if ((arg == "-m") || (arg == "--minSize")){
+          min_ctg_size = std::stoi(argv[++i]);
+      } else if (arg == "-a") {
+          statsFileName1 = argv[++i];
+      } else if (arg == "-A") {
+          statsFileName2 = argv[++i];
+      } else {
+          molecule_file = argv[i++];
+      }
   }
 
   std::vector < std::string > chr_names;
@@ -140,11 +140,11 @@ int main (int argc, char* argv[])
   std::string line, contig;
   long int size;
   if (! contigFile.is_open()) {
-      std::cerr << "Cannot open contig file.\n";
+    std::cerr << "Cannot open contig file.\n";
     exit(EXIT_FAILURE);
   }
   while(getline(contigFile, line)) {
-      std::stringstream streamedLine (line);
+    std::stringstream streamedLine (line);
     streamedLine >> contig >> size;
     chr_names.push_back(contig);
     chr_sizes.push_back(size);
@@ -159,12 +159,6 @@ int main (int argc, char* argv[])
   std::vector < std::vector < double > > molecule_read_densities;
   std::vector < std::vector < double > > starting_molecules;
   std::vector < std::vector < double > > ending_molecules;
-  std::vector < std::vector < double > > score_molecule_coverages;
-  std::vector < std::vector < double > > score_middle_mol_coverages;
-  std::vector < std::vector < double > > score_molecule_lengths;
-  std::vector < std::vector < double > > score_molecule_read_densities;
-  std::vector < std::vector < double > > score_starting_molecules;
-  std::vector < std::vector < double > > score_ending_molecules;
   molecule_stat2(
     molecule_file,
     molecule_coverages,
@@ -184,12 +178,6 @@ int main (int argc, char* argv[])
     molecule_read_densities,
     starting_molecules,
     ending_molecules,
-    score_molecule_coverages,
-    score_middle_mol_coverages,
-    score_molecule_lengths,
-    score_molecule_read_densities,
-    score_starting_molecules,
-    score_ending_molecules,
     chr_names,
     chr_sizes,
     window,

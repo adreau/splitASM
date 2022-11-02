@@ -256,7 +256,6 @@ void molecule_stat2(
     std::string                            &statsFileName1)
 {
 
-
   size_t nchrs = chr_names.size();
   std::unordered_map < std::string, size_t > chr_map; // map chr name to ids
   molecule_coverage.resize(nchrs);
@@ -268,7 +267,7 @@ void molecule_stat2(
 
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     chr_map[chr_names[chrid]] = chrid;
-    long int size = chr_sizes[chrid] / window + 1;
+    long int size = (chr_sizes[chrid] - 1) / window + 1;
     molecule_coverage[chrid]     = std::vector < double > (size, 0);
     middle_mol_coverage[chrid]   = std::vector < double > (size, 0);
     molecule_length[chrid]       = std::vector < double > (size, 0);
