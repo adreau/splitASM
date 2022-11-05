@@ -421,7 +421,7 @@ void detect_outliers2(
           ctg                   << '\t' <<
           pos * window + 1      << '\t' <<
           (pos + 1) * window    << '\t' <<
-          score_all_values[cpt] << '\t';
+          score_all_values[cpt] << '\n';
     }
     std::cout << "Analyzing contig #" << chrid << "/" << nchrs << ".\r" << std::flush;
     if (! incut) {
