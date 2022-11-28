@@ -23,15 +23,15 @@ static void show_usage(std::string name)
 {
     std::cerr << "Usage: " << name << " <option(s)> MOLECULE FILE \n"
               << "Options:\n"
-              << "\t-h, --help\t\tShow this help message\n"
-              << "\t-t, --threshold FLOAT\tStringency threshold (default 0.01, higher is less stringent) \n"
-              << "\t-w, --window INT\tWindow size for outliers detection (default 10kb) \n"
-              << "\t-c, --contigs FILE\tContig size file name \n"
-              << "\t-o, --output FILE\tOutput bed file name \n"
-              << "\t-s, --sampleSize INT\tSample size for outlier detection, if zero or not specified then the sample is the input size\n"
-              << "\t-m, --minSize INT\tMinimum contig size (default 2 x window size)\n"
-              << "\t-a FILE\t\twrite raw counts to file\n"
-              << "\t-A FILE\t\twrite scores to file\n"
+              << "  -h, --help             Show this help message\n"
+              << "  -t, --threshold FLOAT  Stringency threshold (default 0.01, higher is less stringent) \n"
+              << "  -w, --window INT       Window size for outliers detection (default 10kb) \n"
+              << "  -c, --contigs FILE     Contig size file name \n"
+              << "  -o, --output FILE      Output bed file name \n"
+              << "  -s, --sampleSize INT   Sample size for outlier detection, if zero or not specified then the sample is the input size\n"
+              << "  -m, --minSize INT      Minimum contig size (default 2 x window size)\n"
+              << "  -a FILE                write raw counts to file\n"
+              << "  -A FILE                write scores to file\n"
               << std::endl;
 }
 

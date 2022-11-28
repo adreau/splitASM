@@ -357,8 +357,9 @@ void detect_outliers2(
     n_elements += molecule_coverages[chrid].size();
   }
   int d = 5;
-  std::vector < double > all_values;
+  std::vector < double > all_values (d * n_elements);
   std::vector < double > score_all_values (n_elements);
+  /*
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     all_values.insert(all_values.end(),     molecule_coverages[chrid].begin(),     molecule_coverages[chrid].end());
   }
@@ -374,6 +375,18 @@ void detect_outliers2(
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     all_values.insert(all_values.end(),                 n_ends[chrid].begin(),                 n_ends[chrid].end());
   }
+  */
+  size_t cpt = 0;
+  for (size_t chrid = 0; chrid < nchrs; ++chrid) {
+    for (size_t i = 0; i < molecule_coverages[chrid].size(); ++i) {
+      all_values[cpt++] = molecule_coverages[chrid][i];
+      all_values[cpt++] = mean_lengths      [chrid][i];
+      all_values[cpt++] = read_densities    [chrid][i];
+      all_values[cpt++] = n_starts          [chrid][i];
+      all_values[cpt++] = n_ends            [chrid][i];
+    }
+  }
+  if (cpt != n_elements) std::cerr << "Problem while filling the values...\n";
 
   compute_score(all_values, n_elements, d, n_samples, seed, score_all_values);
 
@@ -391,7 +404,7 @@ void detect_outliers2(
 //compute_score(all_n_ends,                 n_elements, d, n_samples, seed, all_score_n_ends);
 //std::cerr << "... done.\n";
 
-  size_t cpt = 0;
+  cpt = 0;
   for (size_t chrid = 0; chrid < nchrs; ++chrid) {
     int  npos           = molecule_coverages[chrid].size();
     bool incut          = false;
