@@ -386,7 +386,7 @@ void detect_outliers2(
       all_values[cpt++] = n_ends            [chrid][i];
     }
   }
-  if (cpt != n_elements) std::cerr << "Problem while filling the values...\n";
+  if (cpt != n_elements) std::cerr << "Problem while filling the values: expected " << n_elements << ", got " << cpt << "...\n";
 
   compute_score(all_values, n_elements, d, n_samples, seed, score_all_values);
 
