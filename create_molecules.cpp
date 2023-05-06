@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <iostream>     // std::cin, std::cout, std::cerr
 #include <sstream>      // std::stringstream
+#include <fstream>
 
 #include "constants.h"
 #include "globals.h"
@@ -366,9 +367,15 @@ void sort_molecules() {
 }
 
 void print_molecules() {
-  for (Molecule &molecule: molecules) {
-    std::cout << molecule;
+  std::ofstream output_file(Globals::output_molecules_file_name);
+  if (! output_file) {
+    std::cerr << "Cannot write output molecule file to " << Globals::output_molecules_file_name << ".\nExting." << "\n";
+    exit(EXIT_FAILURE);
   }
+  for (Molecule &molecule: molecules) {
+    output_file << molecule;
+  }
+  output_file.close();
 }
 
 void make_molecules() {
