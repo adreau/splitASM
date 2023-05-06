@@ -6,15 +6,9 @@
 #include <iostream>     // std::cin, std::cout, std::cerr
 #include <sstream>      // std::stringstream
 
-const unsigned int max_read_distance = 60'000;
-const unsigned int min_mapq = 0;
-const unsigned int min_mapq_solid =  30;
-const unsigned int min_len_solid  = 120;
-const unsigned int min_n_reads    =   2;
-
-const std::string SEQUENCE_LINE {   "@SQ" };
-const std::string SEQUENCE_NAME {   "SN:" };
-const std::string BARCODE_FLAG  { "BX:Z:" };
+#include "constants.h"
+#include "globals.h"
+#include "parse_parameters.h"
 
 
 bool starts_with(const std::string &s1, const std::string &s2) {
@@ -28,7 +22,7 @@ struct Interval {
   unsigned int mapq;
   Interval (std::string &n, unsigned long s, unsigned long e, unsigned int m): name(n), start(s), end(e), mapq(m) {}
   bool is_solid () {
-    return ((mapq >= min_mapq_solid) || ((end - start + 1) > min_len_solid));
+    return ((mapq >= Globals::min_mapq_solid) || ((end - start + 1) > Globals::min_len_solid));
   }
   unsigned long int get_distance (Interval &i) {
     if (start   > i.end) return start - i.end;
@@ -175,7 +169,7 @@ bool parse_main_line (std::string &line, std::string &name, unsigned int &chrid,
     }
     else if (i == 4) {
       mapq = std::stoi(value);
-      if (mapq < min_mapq) {
+      if (mapq < Globals::min_mapq) {
         return false;
       }
     }
@@ -276,8 +270,8 @@ void trim_barcodes() {
   std::cerr << "Trimming barcodes...\n";
   auto it = barcodes.begin();
   while (it != barcodes.end()) {
-    if (count_n_reads(it->second) < min_n_reads) it = barcodes.erase(it);
-    else                                         ++it;
+    if (count_n_reads(it->second) < Globals::min_n_reads) it = barcodes.erase(it);
+    else                                                ++it;
   }
 }
 
@@ -296,7 +290,7 @@ void sort_barcodes() {
 //   A split is made iff the distance between consecutive reads is greater than max_read_distance
 unsigned int find_first_split (std::vector < Interval > &intervals, unsigned int start_id) {
   for (unsigned int prev = start_id, next = start_id + 1; next < intervals.size(); ++prev, ++next) {
-    if (intervals[prev].get_distance(intervals[next]) > max_read_distance) {
+    if (intervals[prev].get_distance(intervals[next]) > Globals::max_read_distance) {
       return next;
     }
   }
@@ -311,7 +305,7 @@ bool check_min_mapq (std::vector < Interval > &intervals, unsigned int start_id,
   for (unsigned int id = start_id; id < end_id; ++id) {
     mapq = std::max(mapq, intervals[id].mapq);
   }
-  return (mapq >= min_mapq_solid);
+  return (mapq >= Globals::min_mapq_solid);
 }
 
 // Returns true iff at least one solid read is found
@@ -366,7 +360,7 @@ void join_to_molecules() {
 }
 
 void sort_molecules() {
-  std::cerr << "Sorting molecules...\n";
+  std::cerr << "Sorting " << molecules.size() << " molecules...\n";
   molecules.shrink_to_fit();
   std::sort(molecules.begin(), molecules.end());
 }
@@ -385,8 +379,9 @@ void make_molecules() {
   print_molecules();
 }
 
-int main() {
+int main (int argc, char* argv[]) {
+  parse_parameters(argc, argv);
   read_sam();
   make_molecules();
-  return 0;
+  exit(EXIT_SUCCESS);
 }

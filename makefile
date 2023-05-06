@@ -1,7 +1,13 @@
+SRCS=$(wildcard *.cpp)
+OBJS=$(SRCS:.cpp=.o )
+
 all: molsplit createmol
 
-createmol: create_molecules.cpp
-	g++ -g -fsanitize=address -std=c++17 -o createmol create_molecules.cpp
+createmol: create_molecules.o globals.o parse_parameters.o
+	g++ -g -fsanitize=address -std=c++17 -O3 -o createmol create_molecules.o globals.o parse_parameters.o
+
+%.o: %.cpp 
+	g++ -g -fsanitize=address -std=c++17 -O3 -c $< -o $@
 
 molsplit: molsplit.o mol_stat.o stat_per_interval.o outliers_det.o create_bed_file.o
 	g++ -g -fsanitize=address -std=c++17 -o splitASM molsplit.o mol_stat.o stat_per_interval.o outliers_det.o create_bed_file.o -lstdc++fs -pthread
