@@ -13,15 +13,15 @@
 
 // random sampling
 // if seed = 0, seed is randomely set
-void sampling(long n_sample, long max, long seed, std::vector<long> &id_sample) {
+void sampling (unsigned long n_sample, unsigned long max, long seed, std::vector < unsigned long > &id_sample) {
   std::vector < bool > used (max, false);
-  long i, j = 0, nused = 0;
+  unsigned long j = 0, nused = 0;
   time_t t;
 
   // # samples is not less than sampling size
   if (n_sample >= max) {
     std::cerr << "\tNo sampling.\n";
-    for (int i = 0; i < n_sample; ++i) {
+    for (unsigned long i = 0; i < n_sample; ++i) {
       id_sample[i] = i;
     }
     return;
@@ -48,13 +48,13 @@ void sampling(long n_sample, long max, long seed, std::vector<long> &id_sample) 
 // input  -> X: data matrix (array), n: # of objects, d: # of dimensions, Xs:
 // sample set, sid: sample indexes, ns: # of samples
 // output -> result: an array of qsps
-void qsp(std::vector < double > &X, long n, int d, long n_sample, long seed, std::vector < double > &score) {
-  std::vector < long > id_sample (n_sample, 0);
+void qsp(std::vector < double > &X, unsigned long n, int d, unsigned long n_sample, long seed, std::vector < double > &score) {
+  std::vector < unsigned long > id_sample (n_sample, 0);
 
   sampling(n_sample, n, seed, id_sample);
 
   // compute the outlierness score qsp for each data point
-  for (long unsigned point = 0; point < n; point++) {
+  for (unsigned long point = 0; point < n; point++) {
     double res = 0;
     for (long unsigned i = 0; i < n_sample; i++) {
       if (point != id_sample[i]) {
@@ -70,14 +70,14 @@ void qsp(std::vector < double > &X, long n, int d, long n_sample, long seed, std
       }
     }
     score[point] = sqrt(res);
-    if (point % 1000 == 0) std::cerr << "\t" << point << "/" << n << "\r" << std::flush;
+    if (point % 10000 == 0) std::cerr << "\t" << point << "/" << n << "\r" << std::flush;
   }
   std::cerr << "\t" << n << "/" << n << "\n";
 }
 
 
 // normalization of data (divide by SDs for each dimension)
-void normalize(std::vector < double > &X, long n, int d) {
+void normalize(std::vector < double > &X, unsigned long n, int d) {
   std::vector < double > X_means (d, 0);
 
   for (int j = 0; j < d; j++) {
@@ -108,7 +108,7 @@ void normalize(std::vector < double > &X, long n, int d) {
   }
 }
 
-void compute_score(std::vector<double> &stat, long n, long d, long n_sample, long seed, std::vector<double> &score){
+void compute_score(std::vector<double> &stat, unsigned long n, long d, unsigned long n_sample, long seed, std::vector<double> &score){
 
   score = std::vector < double > (stat.size(), 0);
   normalize(stat, d, n);
@@ -124,9 +124,10 @@ void compute_score(std::vector<double> &stat, long n, long d, long n_sample, lon
 
 void detect_outliers(Molecule_stats &molecule_stats) {
 
-  std::ofstream output_file("out.tsv", std::ofstream::out);
+  std::ofstream output_file;
   std::ofstream scoresFile;
   if (! Globals::scoresFileName.empty()) scoresFile.open(Globals::scoresFileName, std::ofstream::out);
+  if (! Globals::output_split_file_name.empty()) output_file.open(Globals::output_split_file_name, std::ofstream::out);
 
   size_t nchrs = Globals::chrs.size();
   size_t n_elements = 0;
@@ -147,7 +148,7 @@ void detect_outliers(Molecule_stats &molecule_stats) {
       all_values[cpt++] = molecule_stats[chrid][i].end;
     }
   }
-  assert(cpt == n_elements);
+  assert(cpt == d * n_elements);
 
   compute_score(all_values, n_elements, d, Globals::n_sample, seed, score_all_values);
 
@@ -158,7 +159,7 @@ void detect_outliers(Molecule_stats &molecule_stats) {
     unsigned int bin_frag_start = 0;
     std::string &ctg    = Globals::chrs[chrid];
 
-    for (int pos = 0; pos < npos; ++pos, ++cpt) {
+    for (unsigned int pos = 0; pos < npos; ++pos, ++cpt) {
       if (score_all_values[cpt] > Globals::threshold) {
         if (! incut) {
           // Check contig size
@@ -167,7 +168,7 @@ void detect_outliers(Molecule_stats &molecule_stats) {
             // Do not print if we start with a cut
             // Output in BED format
             if (pos > 0) {
-              output_file << ctg << '\t' << bin_frag_start * Globals::window << '\t' << pos * Globals::window << '\n';
+              if (! Globals::output_split_file_name.empty()) output_file << ctg << '\t' << bin_frag_start * Globals::window << '\t' << pos * Globals::window << '\n';
             }
           }
         }
@@ -186,12 +187,12 @@ void detect_outliers(Molecule_stats &molecule_stats) {
     std::cerr << "Analyzing contig #" << chrid << "/" << nchrs << ".\r" << std::flush;
     if (! incut) {
       // Output in BED format
-      output_file << ctg << tab << bin_frag_start * Globals::window << tab << Globals::chr_sizes[chrid] << '\n';
+      if (! Globals::output_split_file_name.empty()) output_file << ctg << tab << bin_frag_start * Globals::window << tab << Globals::chr_sizes[chrid] << '\n';
     }
   }
   std::cerr << "Analyzing contig #" << nchrs << "/" << nchrs << ".\n";
 
-  output_file.close();
+  if (! Globals::output_split_file_name.empty()) output_file.close();
 
   if (! Globals::scoresFileName.empty()) scoresFile.close();
 }

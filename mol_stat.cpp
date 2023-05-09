@@ -11,16 +11,13 @@ void compute_stats (Molecule_stats &molecule_stats, Molecules &molecules) {
 
   unsigned long cpt = 0;
   for (auto &molecule: molecules) {
-    // Easier to work with 0-based positions
-    --molecule.start;
-    --molecule.end;
-
+    // Molecules are 0-based
     unsigned int window_start = molecule.start / Globals::window;
     unsigned int window_end   = molecule.end   / Globals::window;
     unsigned int molecule_size = molecule.end - molecule.start + 1;
-    assert(molecule.chrid < Globals::chrs.size());
-    for (int windowid = window_start; windowid <= window_end; ++windowid) {
-      assert(windowid < molecule_stats[molecule.chrid].size());
+    assert(molecule.chrid < molecule_stats.size());
+    assert(window_end < molecule_stats[molecule.chrid].size());
+    for (unsigned int windowid = window_start; windowid <= window_end; ++windowid) {
       unsigned int beg_window = std::max < unsigned int > (windowid * Globals::window, molecule.start);
       unsigned int end_window = std::min < unsigned int > (beg_window + Globals::window - 1, molecule.end);
       unsigned int size = end_window - beg_window + 1;
@@ -41,7 +38,7 @@ void compute_stats (Molecule_stats &molecule_stats, Molecules &molecules) {
 
   for (size_t chrid = 0; chrid < Globals::chrs.size(); ++chrid) {
     std::string &chr = Globals::chrs[chrid];
-    long int size = Globals::chr_sizes[chrid] / Globals::window;
+    unsigned long size = Globals::chr_sizes[chrid] / Globals::window;
     for (size_t windowid = 0; windowid <= size; ++windowid) {
       unsigned int beg_window = windowid * Globals::window;
       unsigned int end_window = std::min < int > (beg_window + Globals::window - 1, Globals::chr_sizes[chrid]);
@@ -63,7 +60,7 @@ void compute_stats (Molecule_stats &molecule_stats, Molecules &molecules) {
           windowid * Globals::window + 1               << tab <<
           (windowid + 1) * Globals::window             << tab <<
           molecule_stats[chrid][windowid].coverage     << tab <<
-          molecule_stats[chrid][windowid].coverage     << tab <<
+          molecule_stats[chrid][windowid].length       << tab <<
           molecule_stats[chrid][windowid].read_density << tab <<
           molecule_stats[chrid][windowid].start        << tab <<
           molecule_stats[chrid][windowid].end          << "\n";

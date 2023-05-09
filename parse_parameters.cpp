@@ -3,9 +3,8 @@
 #include "parse_parameters.h"
 
 
-static void show_usage(char *name)
-{
-    std::cerr << "Usage: " << name << " <option(s)> < BAM_FILE \n"
+void show_usage(char *name) {
+    std::cerr << "Usage: " << name << " <option(s)> < SAM_FILE \n"
               << "Options:\n"
               << "  -h, --help               Show this help message\n"
               << "=== Input parameters ===\n"
@@ -19,11 +18,12 @@ static void show_usage(char *name)
               << "  -r, --nReads      INT    Min. #reads per barcode (default: "           << Globals::min_n_reads                << ")\n"
               << "  -c, --ouputMol    FILE   Output file name (default: "                  << Globals::output_molecules_file_name << ")\n"
               << "=== Split ASM step ===\n"
-              << "  -t, --threshold   FLOAT  Stringency threshold, higher is less stringent, (default 0.01) \n"
+              << "  -t, --threshold   FLOAT  Stringency threshold, higher is less stringent (default " << Globals::threshold << ") \n"
               << "  -o, --output      FILE   Output bed file name \n"
               << "  -s, --sampleSize  INT    Sample size for outlier detection, if zero or not specified then the sample is the input size\n"
               << "  -z, --minSize     INT    Minimum contig size (default 2 x window size)\n"
-              << "  -a, --counts      FILE   write raw counts to file\n"
+              << "  -b, --ouputSplit  FILE   Output splits in BED file\n"
+              << "  -a, --counts      FILE   Write raw counts to file\n"
               << "  -A, --scores      FILE   Write scores to file\n"
               << std::endl;
 }
@@ -48,6 +48,8 @@ void parse_parameters (int argc, char* argv[])
       Globals::min_n_reads = std::stoi(argv[++i]);
     } else if ((arg == "-c") || (arg == "--ouputMol")){
       Globals::output_molecules_file_name = argv[++i];
+    } else if ((arg == "-b") || (arg == "--ouputSplit")){
+      Globals::output_split_file_name = argv[++i];
     } else if ((arg == "-t") || (arg == "--threshold")) {
       Globals::threshold = std::stof(argv[++i]);
     } else if ((arg == "-w") || (arg == "--window")) {

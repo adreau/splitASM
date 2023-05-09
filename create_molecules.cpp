@@ -22,7 +22,6 @@ unsigned int count_n_names (std::vector < std::string > &names) {
 }
 
 unsigned int count_n_reads (std::vector < std::vector < Interval > > &reads) {
-  unsigned int n = 0;
   std::vector < std::string > names;
   for (auto &r1: reads) {
     for (auto &r2: r1) {
@@ -42,7 +41,7 @@ void trim_barcodes (Barcodes &barcodes) {
 }
 
 void sort_barcodes (Barcodes &barcodes) {
-  std::cerr << "Sorting barcodes...\n";
+  std::cerr << "Sorting " << barcodes.size() << " barcodes...\n";
   for (auto &p: barcodes) {
     p.second.shrink_to_fit();
     for (auto &q: p.second) {

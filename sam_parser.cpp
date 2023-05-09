@@ -85,7 +85,8 @@ unsigned int parse_cigar (std::string &cigar) {
 bool parse_main_line (std::string &line, std::string &name, unsigned int &chrid, unsigned long &start, unsigned long &end, unsigned int &mapq, std::string &barcode) {
   std::stringstream split_line(line);
   std::string value;
-  unsigned int flag = -1;
+  const unsigned int no_value = -1;
+  unsigned int flag = no_value;
   for (unsigned int i = 0; split_line >> value; ++i) {
     if (i == 0) {
       name = value;
@@ -124,10 +125,10 @@ bool parse_main_line (std::string &line, std::string &name, unsigned int &chrid,
   if (barcode.empty()) {
     return false;
   }
-  assert(chrid != -1);
-  assert(start != -1);
-  assert(end != -1);
-  assert(mapq != -1);
+  assert(chrid != no_value);
+  assert(start != no_value);
+  assert(end   != no_value);
+  assert(mapq  != no_value);
   return true;
 }
 
@@ -154,7 +155,7 @@ bool read_main_line (Barcodes &barcodes, std::string &line) {
 }
 
 void read_header(std::string &line) {
-  for (line; std::getline(std::cin, line);) {
+  while (std::getline(std::cin, line)) {
     if (line[0] == '@') {
       read_header_line(line);
     }
@@ -167,6 +168,12 @@ void read_header(std::string &line) {
 void read_main(Barcodes &barcodes, std::string &line) {
   unsigned long int n_reads_kept = 0;
   unsigned long int cpt = 1;
+  if (Globals::chrs.empty()) {
+    std::cerr << "Error!  No reference found in the sam file.\nIf you used 'samtools view', please add use 'samtools view -h' instead.\nExiting.\n";
+    exit(EXIT_FAILURE);
+  }
+  Globals::chrs.shrink_to_fit();
+  Globals::chr_sizes.shrink_to_fit();
   if (read_main_line(barcodes, line)) {
     ++n_reads_kept;
   }
@@ -174,11 +181,11 @@ void read_main(Barcodes &barcodes, std::string &line) {
     if (read_main_line(barcodes, line)) {
       ++n_reads_kept;
     }
-    if (cpt % 10'000'000 == 0) {
-      std::cerr << cpt << " reads read, " << n_reads_kept << " kept in " << barcodes.size() << " barcodes." << "\n";
+    if (cpt % 10000000 == 0) {
+      std::cerr << cpt << " reads read, " << n_reads_kept << " kept, using " << barcodes.size() << " barcodes." << "\r" << std::flush;
     }
   }
-  std::cerr << cpt << " reads read, " << n_reads_kept << " kept in " << barcodes.size() << " barcodes." << "\n";
+  std::cerr << cpt << " reads read, " << n_reads_kept << " kept, using " << barcodes.size() << " barcodes." << "\n";
 }
 
 void read_sam (Barcodes &barcodes) {

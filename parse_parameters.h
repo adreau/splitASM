@@ -3,7 +3,7 @@
 
 #include "globals.h"
 
-static void show_usage(char *name);
+void show_usage(char *name);
 void parse_parameters (int argc, char* argv[]);                                                                                                                                                                    
 
 #endif
