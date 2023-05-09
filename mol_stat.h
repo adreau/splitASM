@@ -1,17 +1,10 @@
-#pragma once
+#ifndef MOLECULE_STATS_H
+#define MOLECULE_STATS_H
 
-#include <string>
+#include "constants.h"
+#include "globals.h"
+#include "molecule.h"
 
-void molecule_stat(std::string tmp_file, std::string stat_file);
-void molecule_stat2(
-    std::string                            &input_file_name,
-    std::vector < std::vector < double > > &molecule_coverage,
-    std::vector < std::vector < double > > &molecule_length,
-    std::vector < std::vector < double > > &molecule_read_density,
-    std::vector < std::vector < double > > &starting_molecules,
-    std::vector < std::vector < double > > &ending_molecules,
-    std::vector < std::string >            &chr_names,
-    std::vector < long int >               &chr_sizes,
-    int                                     window,
-    std::string                            &statsFileName1);
+void compute_stats(Molecule_stats &molecule_stats, Molecules &molecules);
 
+#endif
